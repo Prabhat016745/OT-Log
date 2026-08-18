@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overtime Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C2230;
+    --navy:#1B2A4A;
+    --navy-deep:#101a30;
+    --amber:#E8A33D;
+    --amber-deep:#C97F1B;
+    --paper:#F7F4EC;
+    --paper-line:#E4DECC;
+    --slate:#6B7280;
+    --ok:#3E7A52;
+    --err:#B4453B;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    background-image:
+      repeating-linear-gradient(var(--paper-line) 0 1px, transparent 1px 32px);
+    background-attachment:local;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 60px;}
+
+  /* header / punch-card banner */
+  header{
+    background:var(--navy);
+    background-image:linear-gradient(160deg,var(--navy) 0%,var(--navy-deep) 100%);
+    color:#fff;
+    padding:28px 24px 22px;
+    border-radius:0 0 var(--radius) var(--radius);
+    margin:0 -0 18px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute; top:0; bottom:0; right:-40px;
+    width:200px;
+    background:repeating-linear-gradient(90deg, rgba(232,163,61,0.08) 0 2px, transparent 2px 14px);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:30px;
+    margin:0;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    font-size:13px;
+    color:#c7cede;
+    margin-top:6px;
+    max-width:520px;
+    line-height:1.5;
+  }
+  .badge{
+    position:absolute;
+    right:24px;
+    top:22px;
+    width:64px;height:64px;
+    border:2px solid var(--amber);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px;
+    color:var(--amber);
+    text-align:center;
+    letter-spacing:.05em;
+    line-height:1.3;
+  }
+
+  /* form card */
+  .card{
+    background:#fff;
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius);
+    padding:24px;
+    box-shadow:0 1px 0 rgba(27,42,74,0.04);
+    margin-bottom:24px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:16px 20px;
+  }
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field.full{grid-column:1/-1;}
+  label{
+    font-size:11px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--slate);
+  }
+  input, textarea{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    padding:10px 11px;
+    border:1px solid #D8D3C4;
+    border-radius:var(--radius);
+    background:var(--paper);
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s, background .15s;
+  }
+  input:focus, textarea:focus{
+    border-color:var(--amber-deep);
+    background:#fff;
+  }
+  textarea{font-family:'Inter',sans-serif;resize:vertical;min-height:60px;}
+
+  .readout{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--navy);
+    color:#fff;
+    border-radius:var(--radius);
+    padding:12px 16px;
+    margin-top:18px;
+  }
+  .readout .label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#9fabc7;}
+  .readout .value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:22px;
+    font-weight:600;
+    color:var(--amber);
+    letter-spacing:.02em;
+  }
+
+  .err-msg{
+    font-size:12px;
+    color:var(--err);
+    margin-top:4px;
+    min-height:16px;
+  }
+
+  .actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:20px;
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    border:none;
+    border-radius:var(--radius);
+    padding:11px 20px;
+    cursor:pointer;
+    transition:transform .1s, opacity .15s;
+  }
+  button:active{transform:translateY(1px);}
+  .btn-primary{background:var(--amber-deep);color:#fff;}
+  .btn-primary:hover{background:#B06E14;}
+  .btn-ghost{background:transparent;color:var(--navy);border:1px solid #D8D3C4;}
+  .btn-ghost:hover{background:var(--paper);}
+
+  /* log section */
+  .log-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .log-head h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:17px;
+    margin:0;
+    color:var(--navy);
+  }
+  .log-head .count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--slate);
+  }
+  .table-wrap{
+    background:#fff;
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius);
+    overflow-x:auto;
+  }
+  table{border-collapse:collapse;width:100%;min-width:760px;}
+  thead th{
+    text-align:left;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:var(--slate);
+    padding:10px 12px;
+    border-bottom:1px solid var(--paper-line);
+    background:var(--paper);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:11px 12px;
+    font-size:13px;
+    border-bottom:1px solid var(--paper-line);
+    vertical-align:top;
+  }
+  tbody tr:nth-child(even){background:#FBFAF6;}
+  tbody tr:hover{background:#F3EEDE;}
+  td.mono, th.mono-h{font-family:'IBM Plex Mono',monospace;}
+  td.reason{max-width:220px;white-space:normal;color:var(--ink);}
+  .del-btn{
+    background:transparent;
+    border:none;
+    color:var(--err);
+    font-size:12px;
+    cursor:pointer;
+    padding:4px 6px;
+    font-weight:600;
+  }
+  .del-btn:hover{text-decoration:underline;}
+  .empty{
+    padding:36px 20px;
+    text-align:center;
+    color:var(--slate);
+    font-size:13px;
+  }
+  .empty strong{display:block;color:var(--ink);font-size:14px;margin-bottom:4px;}
+
+  .toolbar{
+    display:flex;
+    gap:10px;
+  }
+
+  @media (max-width:640px){
+    .grid{grid-template-columns:1fr;}
+    .badge{display:none;}
+    h1{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Timekeeping — Overtime Record</p>
+    <h1>Overtime Log</h1>
+    <p class="sub">Enter overtime worked outside scheduled hours. Total OT hours calculate automatically from start and end time.</p>
+    <div class="badge">PUNCH<br>IN&nbsp;/&nbsp;OUT</div>
+  </header>
+
+  <div class="card">
+    <form id="otForm" novalidate>
+      <div class="grid">
+        <div class="field">
+          <label for="date">Date</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="field">
+          <label for="empId">Employee ID</label>
+          <input type="text" id="empId" placeholder="e.g. EMP-1042" required>
+        </div>
+
+        <div class="field full">
+          <label for="empName">Employee Name</label>
+          <input type="text" id="empName" placeholder="Full name" required>
+        </div>
+
+        <div class="field">
+          <label for="startTime">OT Start Time</label>
+          <input type="time" id="startTime" required>
+        </div>
+        <div class="field">
+          <label for="endTime">OT End Time</label>
+          <input type="time" id="endTime" required>
+        </div>
+
+        <div class="field full">
+          <label for="reason">Reason for Overtime</label>
+          <textarea id="reason" placeholder="Brief reason (e.g. month-end close, urgent client request)" required></textarea>
+        </div>
+      </div>
+
+      <div class="err-msg" id="errMsg"></div>
+
+      <div class="readout">
+        <span class="label">Total OT Hours</span>
+        <span class="value" id="totalHoursDisplay">0.00</span>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn-ghost" id="resetBtn">Clear</button>
+        <button type="submit" class="btn-primary">Add Entry</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="log-head">
+    <h2>Entries</h2>
+    <span class="count" id="entryCount">0 records</span>
+  </div>
+
+  <div class="table-wrap">
+    <table id="logTable" style="display:none;">
+      <thead>
+        <tr>
+          <th class="mono-h">Date</th>
+          <th>Employee Name</th>
+          <th class="mono-h">Employee ID</th>
+          <th class="mono-h">Start</th>
+          <th class="mono-h">End</th>
+          <th class="mono-h">Total OT Hrs</th>
+          <th>Reason</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+    <div class="empty" id="emptyState">
+      <strong>No entries yet</strong>
+      Fill out the form above to log the first overtime record.
+    </div>
+  </div>
+
+  <div class="actions" style="margin-top:16px;">
+    <button type="button" class="btn-ghost" id="exportBtn">Export CSV</button>
+  </div>
+
+</div>
+
+<script>
+  // ── Email notification setup ─────────────────────────────────────────
+  // 1. Go to https://formspree.io and create a free account.
+  // 2. Create a new form, set the receiving email to: prabhat.rawat@avispl.com
+  // 3. Formspree will give you an endpoint like: https://formspree.io/f/abcd1234
+  // 4. Paste that endpoint below, replacing the placeholder.
+  const FORMSPREE_ENDPOINT = "https://formspree.io/f/xyegbypo"; // <-- replace this
+
+  const entries = [];
+
+  const dateEl = document.getElementById('date');
+  const empIdEl = document.getElementById('empId');
+  const empNameEl = document.getElementById('empName');
+  const startEl = document.getElementById('startTime');
+  const endEl = document.getElementById('endTime');
+  const reasonEl = document.getElementById('reason');
+  const totalDisplay = document.getElementById('totalHoursDisplay');
+  const errMsg = document.getElementById('errMsg');
+  const form = document.getElementById('otForm');
+  const logBody = document.getElementById('logBody');
+  const logTable = document.getElementById('logTable');
+  const emptyState = document.getElementById('emptyState');
+  const entryCount = document.getElementById('entryCount');
+
+  // default date = today
+  dateEl.value = new Date().toISOString().slice(0,10);
+
+  function calcHours(start, end){
+    if(!start || !end) return null;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    let mins = (eh*60+em) - (sh*60+sm);
+    if(mins < 0) mins += 24*60; // overnight OT
+    return mins / 60;
+  }
+
+  function updateReadout(){
+    const h = calcHours(startEl.value, endEl.value);
+    totalDisplay.textContent = h === null ? '0.00' : h.toFixed(2);
+  }
+  startEl.addEventListener('change', updateReadout);
+  endEl.addEventListener('change', updateReadout);
+  startEl.addEventListener('input', updateReadout);
+  endEl.addEventListener('input', updateReadout);
+
+  function renderTable(){
+    if(entries.length === 0){
+      logTable.style.display = 'none';
+      emptyState.style.display = 'block';
+      entryCount.textContent = '0 records';
+      return;
+    }
+    logTable.style.display = 'table';
+    emptyState.style.display = 'none';
+    entryCount.textContent = entries.length + (entries.length === 1 ? ' record' : ' records');
+
+    logBody.innerHTML = entries.map((e, i) => `
+      <tr>
+        <td class="mono">${e.date}</td>
+        <td>${escapeHtml(e.name)}</td>
+        <td class="mono">${escapeHtml(e.id)}</td>
+        <td class="mono">${e.start}</td>
+        <td class="mono">${e.end}</td>
+        <td class="mono">${e.hours.toFixed(2)}</td>
+        <td class="reason">${escapeHtml(e.reason)}</td>
+        <td><button class="del-btn" data-idx="${i}">Remove</button></td>
+      </tr>
+    `).join('');
+
+    logBody.querySelectorAll('.del-btn').forEach(btn=>{
+      btn.addEventListener('click', () => {
+        entries.splice(Number(btn.dataset.idx), 1);
+        renderTable();
+      });
+    });
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  form.addEventListener('submit', (evt) => {
+    evt.preventDefault();
+    errMsg.textContent = '';
+
+    if(!dateEl.value || !empIdEl.value.trim() || !empNameEl.value.trim() || !startEl.value || !endEl.value || !reasonEl.value.trim()){
+      errMsg.textContent = 'Please fill in every field before adding the entry.';
+      return;
+    }
+
+    const hours = calcHours(startEl.value, endEl.value);
+    if(hours === null || hours <= 0){
+      errMsg.textContent = 'Start and end time must produce a positive duration.';
+      return;
+    }
+
+    const entry = {
+      date: dateEl.value,
+      name: empNameEl.value.trim(),
+      id: empIdEl.value.trim(),
+      start: startEl.value,
+      end: endEl.value,
+      hours: hours,
+      reason: reasonEl.value.trim()
+    };
+
+    entries.push(entry);
+    renderTable();
+    sendNotification(entry);
+
+    form.reset();
+    dateEl.value = new Date().toISOString().slice(0,10);
+    updateReadout();
+  });
+
+  async function sendNotification(entry){
+    if(!FORMSPREE_ENDPOINT || FORMSPREE_ENDPOINT.includes('YOUR_FORM_ID')){
+      console.warn('Formspree endpoint not configured yet — skipping email notification.');
+      return;
+    }
+    try{
+      await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          _subject: `New OT Entry — ${entry.name} (${entry.date})`,
+          Date: entry.date,
+          "Employee Name": entry.name,
+          "Employee ID": entry.id,
+          "OT Start Time": entry.start,
+          "OT End Time": entry.end,
+          "Total OT Hours": entry.hours.toFixed(2),
+          "Reason for Overtime": entry.reason
+        })
+      });
+    }catch(err){
+      console.error('Notification failed:', err);
+      errMsg.textContent = 'Entry saved, but the email notification failed to send.';
+    }
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    form.reset();
+    dateEl.value = new Date().toISOString().slice(0,10);
+    errMsg.textContent = '';
+    updateReadout();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    if(entries.length === 0){
+      errMsg.textContent = 'No entries to export yet.';
+      return;
+    }
+    const header = ['Date','Employee Name','Employee ID','OT Start Time','OT End Time','Total OT Hours','Reason for Overtime'];
+    const rows = entries.map(e => [e.date, e.name, e.id, e.start, e.end, e.hours.toFixed(2), e.reason]);
+    const csv = [header, ...rows].map(r =>
+      r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')
+    ).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'overtime_log.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
+</body>
+</html>
